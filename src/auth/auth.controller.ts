@@ -7,16 +7,16 @@ export class AuthController {
 
   @Post('signup')
   async signup() {
-    return 'Signup route';
+    return await this.authService.signup();
   }
 
   @Post('signin')
   async signin() {
-    return 'Signin route';
+    return await this.authService.signin();
   }
 
   @Get('signout')
   async Signout() {
-    return 'Signout route';
+    return await this.authService.signout();
   }
 }
