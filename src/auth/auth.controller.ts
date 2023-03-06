@@ -8,9 +8,7 @@ export class AuthController {
 
   @Post('signup')
   async signup(@Body() authDTO: AuthDTO) {
-    const { email, password } = authDTO;
-    console.log(email, password);
-    return await this.authService.signup();
+    return await this.authService.signup(authDTO);
   }
 
   @Post('signin')
