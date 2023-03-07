@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
 import { AuthDTO } from './../dto/auth.dto';
-import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import * as Bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
@@ -10,7 +10,7 @@ import{ Request, Response } from 'express';
 @Injectable()
 export class AuthService {
   constructor(private prisma: PrismaService, private jwt: JwtService ) {}
-  async signup(authDTO: AuthDTO) {
+  async signup(authDTO: AuthDTO, req: Request, res: Response) {
     const { email, password } = authDTO;
 
     // Check if Email Exists.
@@ -27,12 +27,28 @@ export class AuthService {
     // Hashed Password.
     const hashedPassword = await this.hashingPassword(password);
 
-    return await this.prisma.user.create({
+    const createdUser = await this.prisma.user.create({
       data: {
         email,
         password: hashedPassword,
       },
     });
+
+    if (!createdUser) {
+      throw new InternalServerErrorException();
+    }
+
+    const token = await this.signToken({ id: createdUser.id, email: createdUser.email })
+
+    if (!token) {
+      throw new ForbiddenException();
+    }
+
+    res.cookie('token', token, {})
+
+    return res.send({
+      message: 'Signed up Successfully!'
+    })
   }
 
   async signin(authDTO: AuthDTO, req: Request, res: Response) {
@@ -71,8 +87,12 @@ export class AuthService {
     })
   }
 
-  async signout() {
-    return 'signout service';
+  async signout(req: Request, res: Response) {
+    res.clearCookie('token')
+
+    return res.send({
+      message: 'Signed out Successfully!'
+    })
   }
 
   // Hashing Password.

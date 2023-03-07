@@ -7,8 +7,8 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('signup')
-  async signup(@Body() authDTO: AuthDTO) {
-    return await this.authService.signup(authDTO);
+  async signup(@Body() authDTO: AuthDTO, @Req() req, @Res() res) {
+    return await this.authService.signup(authDTO, req, res);
   }
 
   @Post('signin')
@@ -17,7 +17,7 @@ export class AuthController {
   }
 
   @Get('signout')
-  async Signout() {
-    return await this.authService.signout();
+  async Signout(@Req() req, @Res() res) {
+    return await this.authService.signout(req, res);
   }
 }
