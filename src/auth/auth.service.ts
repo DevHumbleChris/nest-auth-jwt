@@ -1,10 +1,11 @@
 /* eslint-disable prettier/prettier */
 import { AuthDTO } from './../dto/auth.dto';
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import * as Bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { jwtSecret } from 'src/utils/constants';
+import{ Request, Response } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -34,7 +35,7 @@ export class AuthService {
     });
   }
 
-  async signin(authDTO: AuthDTO) {
+  async signin(authDTO: AuthDTO, req: Request, res: Response) {
     const { email, password } = authDTO;
 
     // Check if Email Exists.
@@ -59,9 +60,15 @@ export class AuthService {
 
     const token = await this.signToken({ id: user.id, email: user.email })
 
-    return {
-      accessToken: token
+    if (!token) {
+      throw new ForbiddenException();
     }
+
+    res.cookie('token', token, {})
+
+    return res.send({
+      message: 'Logged in Successfully!'
+    })
   }
 
   async signout() {
