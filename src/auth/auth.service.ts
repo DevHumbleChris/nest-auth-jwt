@@ -3,10 +3,12 @@ import { AuthDTO } from './../dto/auth.dto';
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import * as Bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
+import { jwtSecret } from 'src/utils/constants';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private jwt: JwtService ) {}
   async signup(authDTO: AuthDTO) {
     const { email, password } = authDTO;
 
@@ -43,15 +45,23 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new BadRequestException('Email Does Not Exists')
+      throw new BadRequestException('Email Does Not Exists');
     }
 
-    const isMatch = await this.comparePassword({password, hashedPassword: user.password });
+    const isMatch = await this.comparePassword({
+      password,
+      hashedPassword: user.password,
+    });
 
     if (!isMatch) {
-      throw new BadRequestException('Passowrd Incorrect!')
+      throw new BadRequestException('Passowrd Incorrect!');
     }
-    return 'signin service';
+
+    const token = await this.signToken({ id: user.id, email: user.email })
+
+    return {
+      accessToken: token
+    }
   }
 
   async signout() {
@@ -65,8 +75,14 @@ export class AuthService {
   }
 
   // Compare Passwords.
-  async comparePassword(args: { password: string, hashedPassword: string }) {
+  async comparePassword(args: { password: string; hashedPassword: string }) {
     const { password, hashedPassword } = args;
     return await Bcrypt.compare(password, hashedPassword);
+  }
+
+  // Sign Tokens.
+  async signToken(args: { id: string; email: string }) {
+    const payload = args
+    return await this.jwt.sign(payload, { secret: jwtSecret })
   }
 }
